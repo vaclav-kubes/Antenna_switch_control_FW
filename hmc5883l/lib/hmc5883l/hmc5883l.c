@@ -42,7 +42,7 @@ struct data HMC5883L_rawData(struct data write_to){
 
 
 float HMC5883L_azimuth(int16_t X, int16_t Y){
-    double heading = 180*atan2((double)(Y + 182)/1.090f, (double)(X - 10)/1.090f)/M_PI;
+    double heading = 180*atan2((double)(Y + 182)/1.090f, (double)(X - 10)/1.090f)/M_PI - 90;
 
     heading += MAG_POLE_DEC;
 
@@ -74,16 +74,17 @@ void HMC5883L_ftoa(float f, char *outp_str, uint8_t after_point, uint8_t size_of
         }
     }
     add_zeros[pos] = '\0';
-    
+
     char frc [after_point + 1];
     strcpy(frc, add_zeros);
     strcat(frc, frac_part);
     //uart_puts("\n");
-    uart_puts(int_part);
+    /*uart_puts(int_part);
     uart_puts(",");
     uart_puts(frc);
-    uart_puts("\t→→\t");
-    uint8_t shift = 0;
+    uart_puts("\t→→\t");*/
+    
+    //uint8_t shift = 0;
 
     for(uint8_t i = 0; i < sizeof(int_part) - 1; i++){
         /*if(int_part[i] == '\0'){
@@ -109,21 +110,20 @@ void HMC5883L_ftoa(float f, char *outp_str, uint8_t after_point, uint8_t size_of
     uart_puts(frac_part);
     uart_puts(",");
     uart_puts(str);*/
+    char str_out [sizeof(str)];
+    char dot [2] = ".";
+    strcpy(str_out, int_part);
+    strcat(str_out, dot);
+    strcat(str_out, frc);
     for(uint8_t i = 0; i < size_of_inp_array; i++){
         *(outp_str + i) = '\0';
     }
     for(uint8_t i = 0; i < (sizeof(int_part) + sizeof(frc)); i++){
-        *(outp_str + i) = str[i];
+        *(outp_str + i) = str_out[i];
     }
-    uart_puts(str);
-    uart_puts("\t→→\t");
-    char str1 [50];
-    char dot [2] = ".";
-    strcpy(str1, int_part);
-    strcat(str1, dot);
-    strcat(str1, frc);
-    uart_puts(str1);
-    uart_puts("\t→→\t");
+    /*uart_puts(str);
+    uart_puts("\t→→\t");*/
+
 }
 
 #endif

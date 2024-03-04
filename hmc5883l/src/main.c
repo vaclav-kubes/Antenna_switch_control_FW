@@ -47,7 +47,7 @@ int main (void){
 
 
       HMC5883L_ftoa(HMC5883L_azimuth(raw_meas.X, raw_meas.Y), string, 2, sizeof(string));
-      ftoa(HMC5883L_azimuth(raw_meas.X, raw_meas.Y), string, 2);
+      //ftoa(HMC5883L_azimuth(raw_meas.X, raw_meas.Y), string, 2);
       uart_puts(string);
       uart_puts("\n");
 
