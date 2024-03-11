@@ -1,0 +1,37 @@
+#include <avr/io.h>         // AVR device-specific IO definitions
+#include <avr/interrupt.h>  // Interrupts standard C library for AVR-GCC
+#include <twi.h> // I2C library
+#include "timer.h"
+#include <uart.h>
+#include <stdlib.h> 
+#include <gpio.h>
+//#include <math.h>
+#include <string.h>
+#include <adc.h>
+#include <hmc5883l.h>
+#include <mcp9808.h>
+#include "antenna_switch_IO.h"
+
+#ifndef F_CPU
+# define F_CPU 16000000  // CPU frequency in Hz required for UART_BAUD_SELECT
+#endif
+
+
+
+
+int main (void){
+    twi_init();
+    uart_init(UART_BAUD_SELECT(9600, F_CPU));
+    ADC_init();
+    HMC588L_init();
+    MCP9808_init();
+
+    GPIO_mode_output(&DDRC, LED);
+    GPIO_write_low(&DDRC, LED);
+        
+    sei();
+
+    while(1){
+
+    }
+}

@@ -278,7 +278,7 @@
     defined(__AVR_ATmega164P__) || defined(__AVR_ATmega324P__) || defined(__AVR_ATmega644P__) ||  \
     defined(__AVR_ATmega164A__) || defined(__AVR_ATmega164PA__) || defined(__AVR_ATmega324A__) || defined(__AVR_ATmega324PA__) || \
     defined(__AVR_ATmega644A__) || defined(__AVR_ATmega644PA__) || defined(__AVR_ATmega1284__) || defined(__AVR_ATmega1284P__) || \
-    defined(__AVR_ATtiny1634__)
+    defined(__AVR_ATtiny1634__) || defined(__AVR_ATmega328PB__)
 /* ATmega with two USART */
 # define ATMEGA_USART1
 # define UART0_RECEIVE_INTERRUPT  USART0_RX_vect

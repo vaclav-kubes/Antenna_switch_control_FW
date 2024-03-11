@@ -30,8 +30,8 @@ void twi_init(void)
     TWI_PORT |= (1<<TWI_SDA_PIN) | (1<<TWI_SCL_PIN);
 
     /* Set SCL frequency */
-    TWSR0 &= ~((1<<TWPS1) | (1<<TWPS0));
-    TWBR0 = TWI_BIT_RATE_REG;
+    TWSR &= ~((1<<TWPS1) | (1<<TWPS0));
+    TWBR = TWI_BIT_RATE_REG;
 }
 
 
@@ -43,8 +43,8 @@ void twi_init(void)
 void twi_start(void)
 {
     /* Send Start condition */
-    TWCR0 = (1<<TWINT) | (1<<TWSTA) | (1<<TWEN);
-    for(uint32_t i = 0; i < TWI_TIMEOUT && ((TWCR0 & (1<<TWINT)) == 0); i++) asm("NOP");
+    TWCR = (1<<TWINT) | (1<<TWSTA) | (1<<TWEN);
+    for(uint32_t i = 0; i < TWI_TIMEOUT && ((TWCR & (1<<TWINT)) == 0); i++) asm("NOP");
 }
 
 
@@ -59,12 +59,12 @@ uint8_t twi_write(uint8_t data)
     uint8_t twi_status;
 
     /* Send SLA+R, SLA+W, or data byte on I2C/TWI bus */
-    TWDR0 = data;
-    TWCR0 = (1<<TWINT) | (1<<TWEN);
-    for(uint32_t i = 0; i < TWI_TIMEOUT && ((TWCR0 & (1<<TWINT)) == 0); i++) asm("NOP");
+    TWDR = data;
+    TWCR = (1<<TWINT) | (1<<TWEN);
+    for(uint32_t i = 0; i < TWI_TIMEOUT && ((TWCR & (1<<TWINT)) == 0); i++) asm("NOP");
 
     /* Check value of TWI status register */
-    twi_status = TWSR0 & 0xf8;
+    twi_status = TWSR & 0xf8;
 
     /* Status Code:
           * 0x18: SLA+W has been transmitted and ACK received
@@ -88,12 +88,12 @@ uint8_t twi_write(uint8_t data)
 uint8_t twi_read(uint8_t ack)
 {
     if (ack == TWI_ACK)
-        TWCR0 = (1<<TWINT) | (1<<TWEN) | (1<<TWEA);
+        TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWEA);
     else
-        TWCR0 = (1<<TWINT) | (1<<TWEN);
-    for(uint32_t i = 0; i < TWI_TIMEOUT && ((TWCR0 & (1<<TWINT)) == 0); i++) asm("NOP");
+        TWCR = (1<<TWINT) | (1<<TWEN);
+    for(uint32_t i = 0; i < TWI_TIMEOUT && ((TWCR & (1<<TWINT)) == 0); i++) asm("NOP");
 
-    return (TWDR0);
+    return (TWDR);
 }
 
 
@@ -105,7 +105,7 @@ uint8_t twi_read(uint8_t ack)
 void twi_stop(void)
 {
     /* Generate Stop condition on I2C/TWI bus */
-    TWCR0 = (1<<TWINT) | (1<<TWSTO) | (1<<TWEN);
+    TWCR = (1<<TWINT) | (1<<TWSTO) | (1<<TWEN);
 }
 
 
