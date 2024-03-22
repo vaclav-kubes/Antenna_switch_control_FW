@@ -5,6 +5,10 @@
         "gpio.h": "c",
         "hmc5883l.h": "c",
         "interrupt.h": "c",
-        "antenna_switch_io.h": "c"
+        "antenna_switch_io.h": "c",
+        "mcp9808.h": "c",
+        "ftoa_my.h": "c",
+        "io.h": "c",
+        "timer.h": "c"
     }
 }
