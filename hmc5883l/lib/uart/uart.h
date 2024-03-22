@@ -98,6 +98,7 @@
 # error "size of UART_RX_BUFFER_SIZE + UART_TX_BUFFER_SIZE larger than size of SRAM"
 #endif
 
+
 /*
 ** high byte error return code of uart_getc()
 */
@@ -106,6 +107,7 @@
 #define UART_PARITY_ERROR    0x0400 /**< @brief Parity Error by UART        */
 #define UART_BUFFER_OVERFLOW 0x0200 /**< @brief receive ringbuffer overflow */
 #define UART_NO_DATA         0x0100 /**< @brief no receive data available   */
+
 
 
 /*

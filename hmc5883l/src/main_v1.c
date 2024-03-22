@@ -1,7 +1,7 @@
 #include <avr/io.h>         // AVR device-specific IO definitions
 #include <avr/interrupt.h>  // Interrupts standard C library for AVR-GCC
 #include <twi.h> // I2C library
-#include "timer.h"
+//#include "timer.h"
 #include "timer_my.h"
 #include <uart.h>
 #include <stdlib.h> 
@@ -18,8 +18,8 @@
 #ifndef F_CPU
 # define F_CPU 16000000UL  // CPU frequency in Hz required for UART_BAUD_SELECT
 #endif
-#define RX_STOP UCSR0B &=  ~((1 << RXEN0) | (1<<RXCIE0));
-#define RX_START  while((UCSR0A & 0b01000000) != 0b01000000); UCSR0B |= (1 << RXEN0) |(1<<RXCIE0); //; 
+//#define RX_STOP UCSR0B &=  ~((1 << RXEN0) | (1<<RXCIE0));
+//#define RX_START  while((UCSR0A & (1<<TXC0)) != (1<<TXC0)); UCSR0B |= (1 << RXEN0) |(1<<RXCIE0); //; 
 
 /*volatile float temp_A;
 volatile float temp_B;
@@ -32,7 +32,7 @@ uint8_t BC;
 uint8_t ANT;*/
                              //0  1  2  3   4  5  6 7/
 //volatile float diag_data[8]; //IA,IB,TA,TB,FU,EC,AN,CB
-volatile struct d_data {
+struct d_data {
     float temp_A;
     float temp_B;
     float azimuth;
@@ -43,10 +43,10 @@ volatile struct d_data {
     uint8_t ANT;
 }diag_data;
 
-volatile struct data raw_compass;
+struct data raw_compass;
 
-volatile char rx_msg[UART_RX_BUFFER_SIZE];
-volatile char tx_msg[70];
+char rx_msg[UART_RX_BUFFER_SIZE];
+char tx_msg[70];
 volatile uint8_t new_data = 0;
 
 void ANT_init(){
@@ -75,7 +75,7 @@ void ANT_init(){
 }
 
 void send_all_data(){
-    char str [8];
+    char str [9];
     ftoa(diag_data.I_A, str, 2, sizeof(str));
     strcpy(tx_msg, str);
     strcat(tx_msg, ",");
@@ -97,17 +97,11 @@ void send_all_data(){
     ftoa(diag_data.ANT, str, 2, sizeof(str));
     strcat(tx_msg, str);
     strcat(tx_msg, ","); 
-    ftoa(diag_data.CB, str, 2, sizeof(str));
+    itoa(diag_data.CB, str, 10);
     strcat(tx_msg, str);
     strcat(tx_msg, "\n");  
 
     uart_puts(tx_msg);
-    uint8_t i = 0;
-    while(tx_msg[i] != '\0'){
-        i++;
-        uart_getc();
-    }
-    uart_getc();
 }
 
 void get_all_data(uint8_t CB){
@@ -117,9 +111,12 @@ void get_all_data(uint8_t CB){
     }
     //raw_compass = HMC5883L_rawData(raw_compass);
     diag_data.azimuth = 100.0;//diag_data.azimuth = HMC5883L_azimuth(raw_compass.X, raw_compass.Y);
-    diag_data.U = ADC_get_U();
-    diag_data.I_A = ADC_get_I(I_DIAG1);
-    diag_data.I_B = ADC_get_I(I_DIAG2);
+    uart_puts("1\n");
+    diag_data.U = ADC_U();
+    uart_puts("2\n");
+    diag_data.I_A = ADC_I(I_DIAG1);
+    //uart_puts("3\n");
+    diag_data.I_B = ADC_I(I_DIAG2);
 }
 
 void uart_rx_str(char *var_to_save){
@@ -139,6 +136,7 @@ void uart_rx_str(char *var_to_save){
         if ((c & 0x00FF) != '\n' || c != UART_NO_DATA){
             *(var_to_save + i) = (c & 0x00FF);
         }else{
+            *(var_to_save + i)= '\0';
             break;
         }
     } 
@@ -163,8 +161,8 @@ int main (void){
     //HMC588L_init();
     GPIO_write_low(&PORTC, LED);
     //GPIO_write_low(&PORTD, ANT01);
-    //MCP9808_init(TEMP_A);
-    //diag_data.CB = MCP9808_init(TEMP_B);
+    MCP9808_init(TEMP_A);
+    diag_data.CB = MCP9808_init(TEMP_B);
 
     
     //GPIO_write_high(&PORTC, LED);
@@ -180,25 +178,36 @@ int main (void){
     //GPIO_write_low(&PORTC, LED);
     //uart_puts("2\r\n");
     _delay_ms(250);
-    uart_rx_str(rx_msg);
+    //uart_rx_str(rx_msg);
     
     //uart_puts("3\r\n");
     GPIO_write_high(&PORTC, LED);
     _delay_ms(250);
-    RX_STOP;
+    /*RX_STOP;
     uart_puts("\r\n");
     uart_puts(rx_msg);
-    RX_START;
+    RX_START;*/
     //GPIO_write_low(&PORTD, ANT01);
     //uart_puts("4\r\n");
     GPIO_write_low(&PORTC, LED);
-    _delay_ms(250);
-    
+  
+    TIM3_ovf_50ms();
+    TIM3_ovf_enable();
+    while((uart_getc() & 0x00ff) != '!');
+    TIM3_ovf_disable();
+    TIM3_stop();
+    //RX_STOP;
+    uart_puts("YE");
+    //get_all_data(diag_data.CB);
+    //uart_puts("YE");
+    //diag_data.U = ADC_U();
+    send_all_data();
+    //RX_START;
     /*while(strchr(rx_msg, '!') == NULL){
         uart_rx_str(rx_msg);
     }*/
 
-    GPIO_write_high(&PORTC, LED);
+    /*GPIO_write_high(&PORTC, LED);
     _delay_ms(250);
     GPIO_write_low(&PORTC, LED);
     _delay_ms(250);
@@ -206,7 +215,7 @@ int main (void){
     _delay_ms(250);
     GPIO_write_low(&PORTC, LED);
     _delay_ms(300);
-    GPIO_write_high(&PORTC, LED);
+    GPIO_write_high(&PORTC, LED);*/
     /*RX_STOP;
     send_all_data();
     _delay_ms(20);
@@ -232,8 +241,9 @@ int main (void){
     while(1){
         if(new_data == 1){
             //GPIO_toggle(&PORTC, LED);
+            diag_data.U = ADC_U();
             ftoa(diag_data.U, str, 2, sizeof(str));
-            RX_STOP;
+            //RX_STOP;
             
             uart_puts(str);
             uart_puts("\r\n");
@@ -249,7 +259,7 @@ int main (void){
             uart_puts(str);
             uart_puts("\r\n");
            
-            RX_START;
+            //RX_START;
 
             new_data = 0;
         }
@@ -260,11 +270,16 @@ int main (void){
 
 ISR(TIMER1_OVF_vect){
     GPIO_toggle(&PORTC, LED);
-    diag_data.U = ADC_U();
-    diag_data.I_A = ADC_I(I_DIAG1);
+    //diag_data.U = ADC_U();
+    //diag_data.I_A = ADC_I(I_DIAG1);
     //ADC_read_U();
     //diag_data.U = ADC_get_U();
     //ADC_read_I(I_DIAG1);
     //diag_data.I_A = ADC_get_I(I_DIAG1);
     new_data = 1;
+}
+
+ISR(TIMER3_OVF_vect){
+    TCNT3 = 50036;
+    GPIO_toggle(&PORTC, LED);
 }

@@ -40,7 +40,7 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include "uart.h"
-
+#include "antenna_switch_IO.h"
 
 /*
  *  constants and macros
@@ -550,8 +550,10 @@ void uart_putc(unsigned char data)
  **************************************************************************/
 void uart_puts(const char *s)
 {
+    RX_STOP;
     while (*s)
         uart_putc(*s++);
+    RX_START;
 }/* uart_puts */
 
 /*************************************************************************
