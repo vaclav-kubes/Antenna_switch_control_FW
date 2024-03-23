@@ -40,7 +40,7 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include "uart.h"
-#include "antenna_switch_IO.h"
+//#include "antenna_switch_IO.h"
 
 /*
  *  constants and macros
@@ -356,6 +356,11 @@ static volatile unsigned char UART1_RxTail;
 static volatile unsigned char UART1_LastRxError;
 #endif
 
+/*ISR(USART0_TX_vect){
+    UCSR0B |= (1 << RXEN0) |(1<<RXCIE0);
+    GPIO_toggle(&PORTD, PD5);
+}*/
+
 
 ISR(UART0_RECEIVE_INTERRUPT)
 
@@ -473,7 +478,7 @@ void uart_init(unsigned int baudrate)
     UART0_UBRRL = (unsigned char) (baudrate & 0x00FF);
 
     /* Enable USART receiver and transmitter and receive complete interrupt */
-    UART0_CONTROL = _BV(UART0_BIT_RXCIE) | (1 << UART0_BIT_RXEN) | (1 << UART0_BIT_TXEN);
+    UART0_CONTROL = _BV(UART0_BIT_RXCIE) | (1 << UART0_BIT_RXEN) | (1 << UART0_BIT_TXEN) | (1<<TXCIE0);
 
     /* Set frame format: asynchronous, 8data, no parity, 1stop bit */
     #ifdef UART0_CONTROLC
@@ -550,10 +555,11 @@ void uart_putc(unsigned char data)
  **************************************************************************/
 void uart_puts(const char *s)
 {
-    RX_STOP;
+    //RX_STOP;
     while (*s)
         uart_putc(*s++);
-    RX_START;
+    //RX_START;
+    //tx_end = 1;
 }/* uart_puts */
 
 /*************************************************************************

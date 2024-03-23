@@ -5,7 +5,7 @@
 #include <avr/interrupt.h>  // Interrupts standard C library for AVR-GCC
 #include "antenna_switch_IO.h"
 #include <stdlib.h>
-#include <uart.h>
+//#include <uart.h>
 
 void ADC_init();
 

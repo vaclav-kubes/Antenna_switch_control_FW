@@ -12,17 +12,18 @@
 //#define TIM2_10ms_start() TCNT2 = 99; TCCR2B = (1<<CS22) | (1<<CS21) | (1<<CS20); TCCR2A = 0x00; TIMSK2 |= 1<<TOIE2; 
 //#define TIM2_stop TIMSK2() &= ~(1<<TOIE2);
 
-volatile static uint16_t adc_val = 0;
+static uint16_t adc_val = 0;
 //volatile static uint8_t n = 0;
 volatile static uint8_t adc_end_flg = 0;
 
 void ADC_init(){
+    PRR0 &= ~(1<<PRADC);
     ADMUX = 0x00;
 	ADCSRA = 0x00;
 	ADCSRB = 0x00;
     ADCSRA = ADCSRA | 1<<ADEN;//ADC ENABLE
     ADCSRA = ADCSRA | (1<<ADPS2 | 1<<ADPS1 | 1<<ADPS0); //adc prescaler 128
-    ADCSRA = ADCSRA | 1<<ADIE;//adc interrupt enble
+    //ADCSRA = ADCSRA | 1<<ADIE;//adc interrupt enble
     DIDR0 = DIDR0 | (1<< I_DIAG1 | 1<< I_DIAG2 | 1<< U_DIAG); //disable digital input on pins used for adc
     ADMUX = ADMUX | 1<<REFS0 | 0<<ADLAR  | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0);//adc internal reference 5V | (1<<REFS1 | 1<<REFS0); 
     ADCSRA = ADCSRA | 1<< ADSC;
@@ -89,10 +90,15 @@ float ADC_U(){
     }
     //ADCSRA = ADCSRA | 1<< ADSC;
     
-    
+    //char str [9];
     for(uint8_t i = 0; i < 2; i++){
+        //itoa(ADCSRA, str, 2);
+        //uart_puts(str);
+        //ADCSRA = ADCSRA | 1<< ADIE;
+        //ADCSRA = ADCSRA & ~(1<< ADIF);
         ADCSRA = ADCSRA | 1<< ADSC;//adc start conversion
-        while(!(ADCSRA & (1<<ADIF)));
+        //while(!(ADCSRA & (1<<ADIF)));//ADCSRA = ADCSRA | 1<< ADIE;;
+        while((ADCSRA & (1<<ADSC))); 
         //adc_val = ADC;
         //uart_putc('a');
     }
@@ -118,8 +124,10 @@ float ADC_I(uint8_t i_diag_pin){
     }
     //uart_puts("2.2");
     for(uint8_t i = 0; i < 2; i++){
+        //ADCSRA = ADCSRA | 1<< ADIE;
         ADCSRA = ADCSRA | 1<< ADSC;//adc start conversion
-        while(!(ADCSRA & (1<<ADIF))); 
+        while((ADCSRA & (1<<ADSC))); 
+        //while((ADCSRA & (1<<ADSC))) ADCSRA = ADCSRA | 1<< ADIE; 
         //uart_puts('a');
     }
     //uart_puts("2.2");
@@ -154,7 +162,11 @@ float ADC_I(uint8_t i_diag_pin){
     return  (u * R_RATIO);
 }*/
 
-ISR(ADC_vect){
+/*ISR(ADC_vect){
+    //ADCSRA |= (1 << ADIF);
+    char str [9];
+    itoa(ADCSRA, str, 2);
+    uart_puts(str);
     //ADCSRA |= (1<<ADIF);
     //adc_val = ADC;
     /*if(n < 2){
@@ -173,4 +185,4 @@ ISR(ADC_vect){
     /*char str[11];
     itoa(adc_val, str, 2);
     uart_puts(str);*/
-}
+//}*/

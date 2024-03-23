@@ -3,8 +3,8 @@
 
 #include <avr/io.h>
 
-#define RX_STOP UCSR0B &=  ~((1 << RXEN0) | (1<<RXCIE0));
-#define RX_START  while((UCSR0A & (1<<TXC0)) != (1<<TXC0)); UCSR0B |= (1 << RXEN0) |(1<<RXCIE0);
+//#define RX_STOP UCSR0B &=  ~((1 << RXEN0) | (1<<RXCIE0));
+//#define RX_START  while((UCSR0A & (1<<TXC0)) != (1<<TXC0)); UCSR0B |= (1 << RXEN0) |(1<<RXCIE0);
 
 #define LED PC0
 #define BUTTON PB2
