@@ -12,9 +12,9 @@
 //#define TIM2_10ms_start() TCNT2 = 99; TCCR2B = (1<<CS22) | (1<<CS21) | (1<<CS20); TCCR2A = 0x00; TIMSK2 |= 1<<TOIE2; 
 //#define TIM2_stop TIMSK2() &= ~(1<<TOIE2);
 
-static uint16_t adc_val = 0;
+volatile uint16_t adc_val = 0;
 //volatile static uint8_t n = 0;
-volatile static uint8_t adc_end_flg = 0;
+volatile  uint8_t adc_end_flg = 0;
 
 void ADC_init(){
     PRR0 &= ~(1<<PRADC);
@@ -125,9 +125,10 @@ float ADC_I(uint8_t i_diag_pin){
     //uart_puts("2.2");
     for(uint8_t i = 0; i < 2; i++){
         //ADCSRA = ADCSRA | 1<< ADIE;
-        ADCSRA = ADCSRA | 1<< ADSC;//adc start conversion
+        ADCSRA = ADCSRA | 1<< ADSC ;//adc start conversion| 1<< ADIE
         while((ADCSRA & (1<<ADSC))); 
         //while((ADCSRA & (1<<ADSC))) ADCSRA = ADCSRA | 1<< ADIE; 
+        //while(!(ADCSRA & (1<<ADIF))) ;//ADCSRA = ADCSRA | 1<< ADIE
         //uart_puts('a');
     }
     //uart_puts("2.2");
@@ -161,7 +162,12 @@ float ADC_I(uint8_t i_diag_pin){
     //adc_val = 0;
     return  (u * R_RATIO);
 }*/
-
+/*ISR(ADC_vect){
+    adc_val = ADC;
+    GPIO_toggle(&PORTD, ANT05);
+    //ADCSRA = ADCSRA | 1 <<ADIF;
+    //ADCSRA = ADCSRA | 1<< ADIE;
+}*/
 /*ISR(ADC_vect){
     //ADCSRA |= (1 << ADIF);
     char str [9];

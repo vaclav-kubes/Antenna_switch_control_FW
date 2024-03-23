@@ -110,8 +110,9 @@
 
 //static volatile uint8_t tx_end = 0;
 //static volatile unsigned char UART_RxBuf[UART_RX_BUFFER_SIZE];
-//static volatile unsigned char UART_RxTail;
-//static volatile unsigned char UART_RxHead;
+//volatile unsigned char UART_RxTail;
+//volatile unsigned char UART_RxHead;
+//volatile uint8_t new_chars;
 /*
 ** function prototypes
 */
@@ -123,6 +124,12 @@
  */
 extern void uart_init(unsigned int baudrate);
 
+/**
+ *  @brief   Return number of bytes waiting in the receive buffer
+ *  @param   none
+ *  @return  bytes waiting in the receive buffer
+ */
+extern int uart_available(void);
 
 /**
  *  @brief   Get received byte from ringbuffer

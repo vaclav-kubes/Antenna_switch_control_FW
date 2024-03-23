@@ -40,7 +40,7 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include "uart.h"
-//#include "antenna_switch_IO.h"
+#include "antenna_switch_IO.h"
 
 /*
  *  constants and macros
@@ -360,7 +360,10 @@ static volatile unsigned char UART1_LastRxError;
     UCSR0B |= (1 << RXEN0) |(1<<RXCIE0);
     GPIO_toggle(&PORTD, PD5);
 }*/
-
+ISR(USART0_TX_vect){
+    UCSR0B |= (1 << RXEN0) |(1<<RXCIE0);
+    //UCSR0A |= (1 << TXC0);
+}
 
 ISR(UART0_RECEIVE_INTERRUPT)
 
@@ -404,6 +407,8 @@ ISR(UART0_RECEIVE_INTERRUPT)
         UART_RxHead = tmphead;
         /* store received data in buffer */
         UART_RxBuf[tmphead] = data;
+        //new_chars++;
+        //GPIO_toggle(&PORTD, ANT03);
     }
     UART_LastRxError |= lastRxError;
 }
@@ -491,6 +496,18 @@ void uart_init(unsigned int baudrate)
 }/* uart_init */
 
 /*************************************************************************
+Function: uart_available()
+Purpose:  Determine the number of bytes waiting in the receive buffer
+Input:    None
+Returns:  Integer number of bytes in the receive buffer
+**************************************************************************/
+int uart_available(void)
+{
+        return (UART_RX_BUFFER_MASK + UART_RxHead - UART_RxTail) % UART_RX_BUFFER_MASK;
+}/* uart_available */
+
+
+/*************************************************************************
  * Function: uart_getc()
  * Purpose:  return byte from ringbuffer
  * Returns:  lower byte:  received byte from ringbuffer
@@ -542,7 +559,7 @@ void uart_putc(unsigned char data)
 
     UART_TxBuf[tmphead] = data;
     UART_TxHead         = tmphead;
-
+    RX_DISABLE();
     /* enable UDRE interrupt */
     UART0_CONTROL |= _BV(UART0_UDRIE);
 }/* uart_putc */
@@ -555,7 +572,7 @@ void uart_putc(unsigned char data)
  **************************************************************************/
 void uart_puts(const char *s)
 {
-    //RX_STOP;
+    //RX_DISABLE();
     while (*s)
         uart_putc(*s++);
     //RX_START;

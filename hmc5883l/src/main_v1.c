@@ -18,7 +18,7 @@
 #ifndef F_CPU
 # define F_CPU 16000000UL  // CPU frequency in Hz required for UART_BAUD_SELECT
 #endif
-#define RX_STOP() UCSR0B &=  ~((1 << RXEN0) | (1<<RXCIE0));
+//#define RX_DISABLE() UCSR0B &=  ~((1 << RXEN0) | (1<<RXCIE0));
 //#define RX_START()  while(!(UCSR0A & (1<<TXC0))); UCSR0B &=  ~(1 << RXEN0); UCSR0B |= (1 << RXEN0) |(1<<RXCIE0); //; 
 //#define RX_START()  while(!(UCSR0A & (1<<UDRE0))); UCSR0B &=  ~(1 << RXEN0); UCSR0B |= (1 << RXEN0) |(1<<RXCIE0); //; 
 
@@ -101,7 +101,7 @@ void send_all_data(){
     itoa(diag_data.CB, str, 10);
     strcat(tx_msg, str);
     strcat(tx_msg, "\n");  
-    RX_STOP();
+    //RX_STOP();
     uart_puts(tx_msg);
 }
 
@@ -155,14 +155,14 @@ int main (void){
     ADC_init();
     sei();
     
-    RX_STOP();
+    //RX_STOP();
     uart_puts("START\r\n");
     //_delay_ms(20);
     //RX_START();
     uart_rx_str(rx_msg);
-    RX_STOP();
+    //RX_STOP();
     uart_puts("→\r\n");
-    RX_STOP();
+    //RX_STOP();
     uart_puts(rx_msg);
     //RX_START;
     //HMC588L_init();
@@ -204,7 +204,7 @@ int main (void){
     //TIM3_ovf_disable();
     //TIM3_stop();
     
-    RX_STOP();
+    //RX_STOP();
     uart_puts("YE");
     get_all_data(diag_data.CB);
     //uart_puts("YE");
@@ -240,9 +240,9 @@ int main (void){
         
     }*/
 
-    TIM1_ovf_1sec();
+    TIM1_ovf_4sec();
     TIM1_ovf_enable();
-    uint8_t x = 0;
+    //uint8_t x = 0;
     
     while(1){
         if(new_data){
@@ -252,11 +252,11 @@ int main (void){
                 uart_puts(rx_msg);*/
                 //_delay_ms(50);
                 //RX_START();
-            if(!x){
-                RX_STOP();
+            /*if(!x){
+                //RX_STOP();
                 itoa(x, str, 10);
                 uart_puts(str);
-                RX_STOP();
+                //RX_STOP();
                 uart_puts("RX\r\n");
                 //_delay_ms(50);
                
@@ -266,17 +266,17 @@ int main (void){
                 strcat(rx_msg, "↑(Tx)→");
                 itoa(x, str, 10);
                 
-                RX_STOP();
+                //RX_STOP();
                 
                 uart_puts(rx_msg);
-                RX_STOP();
+                //RX_STOP();
                 uart_puts(str);
-                RX_STOP();
+                //RX_STOP();
                 uart_puts("\r\n");
                 //_delay_ms(50);
                 
                 x = 0;
-            }
+            }*/
             /*uart_rx_str(rx_msg);
             uart_puts(rx_msg);
             uart_puts("\t→\t");
@@ -291,6 +291,11 @@ int main (void){
             uart_puts(c);*/
             
             //uart_puts("\r\n");
+            //uint16_t c = uart_getc();
+            /*if((c&0x00ff) > 0){
+                //uart_putc(0x00ff& c);
+                //GPIO_toggle(&PORTD, ANT05);
+            }*/
         /*if(strlen(UART_RxBuf)>2){
             itoa(strlen(UART_RxBuf), str, 10);
             uart_puts(str);
@@ -304,6 +309,20 @@ int main (void){
             send_all_data();
         }
         }*/
+       //uint16_t t = (uint16_t)UART_RxTail;
+        //uart_puts(str);
+        //uart_rx_str(rx_msg);
+        //t = (uint16_t)UART_RxTail;
+        //itoa(t, str, 10);
+        //uart_puts(str);
+        if(uart_available() > 2){
+            uart_rx_str(rx_msg);  
+            if(strstr(rx_msg, "AL") != NULL){
+                get_all_data(diag_data.CB);
+                send_all_data();
+                GPIO_toggle(&PORTD, ANT05);
+            }
+        }
         new_data = 0;
         }
         /*if(new_data == 1){
@@ -352,8 +371,3 @@ ISR(TIMER3_OVF_vect){
     GPIO_toggle(&PORTC, LED);
 }
 
-ISR(USART0_TX_vect){
-    UCSR0B |= (1 << RXEN0) |(1<<RXCIE0);
-    UCSR0A |= (1 << TXC0);
-    GPIO_toggle(&PORTD, PD5);
-}
