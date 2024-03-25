@@ -50,6 +50,7 @@ void ftoa(float f, char *outp_str, uint8_t after_point, uint8_t size_of_inp_arra
     for(uint8_t i = 0; i < sizeof(frc); i++){
         str[sizeof(int_part) + i] = frc[i];
     }
+    //frc[i++]
     /*strcpy(str, int_part);
     strcat(str, ".");
     strcat(str, frac_part);

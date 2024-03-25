@@ -5,6 +5,7 @@
 #include "timer_my.h"
 #include <uart.h>
 #include <stdlib.h> 
+#include <stdio.h>
 #include <util/delay.h>
 #include <gpio.h>
 //#include <math.h>
@@ -107,8 +108,9 @@ void send_all_data(){
 
 void get_all_data(uint8_t CB){
     diag_data.temp_A = MCP9808_read_temp(TEMP_A);
-    if(CB == 1){
+    if(CB){
         diag_data.temp_B = MCP9808_read_temp(TEMP_B);
+        diag_data.I_B = ADC_I(I_DIAG2);
     }
     //raw_compass = HMC5883L_rawData(raw_compass);
     diag_data.azimuth = 100.0;//diag_data.azimuth = HMC5883L_azimuth(raw_compass.X, raw_compass.Y);
@@ -117,7 +119,32 @@ void get_all_data(uint8_t CB){
     //uart_puts("2\n");
     diag_data.I_A = ADC_I(I_DIAG1);
     //uart_puts("3\n");
-    diag_data.I_B = ADC_I(I_DIAG2);
+}
+
+void get_U_I(uint8_t CB){
+    //uart_puts("2\n");
+    if(CB){
+        diag_data.I_B = ADC_I(I_DIAG2);
+    }
+    diag_data.I_A = ADC_I(I_DIAG1); 
+    diag_data.U = ADC_U();
+}
+
+void get_temp(uint8_t CB, uint8_t temp_A_B){
+    if(temp_A_B == TEMP_B){
+        if(CB){
+            diag_data.temp_B = MCP9808_read_temp(TEMP_B);
+       }else{
+            diag_data.temp_B = 0.0;
+       } 
+    }else if (temp_A_B == TEMP_A){
+        diag_data.temp_A = MCP9808_read_temp(TEMP_A);
+    } 
+}
+
+void get_compass(){
+    raw_compass = HMC5883L_rawData(raw_compass);
+    diag_data.azimuth = HMC5883L_azimuth(raw_compass.X, raw_compass.Y);
 }
 
 void uart_rx_str(char *var_to_save){
@@ -126,7 +153,7 @@ void uart_rx_str(char *var_to_save){
         *(var_to_save + i) = '\0';
     }*/
     //uart_puts("sub1\r\n");
-    for(uint8_t i = 0; i <= UART_RX_BUFFER_SIZE; i++){
+    /*for(uint8_t i = 0; i < UART_RX_BUFFER_SIZE; i++){
         c =  uart_getc();
         //char str[10];
         //itoa(i, str, 10);
@@ -136,16 +163,132 @@ void uart_rx_str(char *var_to_save){
         //uart_puts("\r\n");
         if ((c & 0x00FF) != '\n' || c != UART_NO_DATA){
             *(var_to_save + i) = (c & 0x00FF);
-        }else{
+        }else if(c >= 0x0100){
+            GPIO_toggle(&PORTD, ANT04);
             *(var_to_save + i)= '\0';
             break;
         }
-    } 
+        else{
+            *(var_to_save + i)= '\0';
+            break;
+        }
+    } */
+    uint8_t i = 0;
+    while(uart_available()){
+        c = uart_getc();
+        /*if((c&0xff00) == UART_BUFFER_OVERFLOW){
+            GPIO_write_low(&PORTD, ANT05);
+        }else if((c&0xff00) == UART_FRAME_ERROR){
+           GPIO_write_low(&PORTD, ANT04); 
+        }else if((c&0xff00) == UART_PARITY_ERROR){
+           GPIO_write_low(&PORTD, ANT03); 
+        }else if((c&0xff00) == UART_OVERRUN_ERROR){
+           GPIO_write_low(&PORTD, ANT02); 
+        }*/
+        /*char str[9];
+        itoa((c >> 8), str, 2);
+        uart_puts(str);
+        uart_puts("\r\n");*/
+        if(((c & 0x00FF) != '\n') && (c < 0x0100)){
+            *(var_to_save + i) = (c & 0x00FF);
+            i++;
+            /*char ch [2] = {c & 0x00FF, '\0'};
+            uart_puts(ch);*/
+        }else{
+            //uart_puts("\r\n");
+            
+            break;
+        }
+    }
+    *(var_to_save + i)= '\0';
+    
 }
 
+void serve_request( char *req_msg, uint8_t req_msg_len){//, uint8_t req_msg_len
+    uint8_t i = 0;
+    char str [req_msg_len];
+    char outp_str [10];
+    char str_float [7];
+
+    while (*(req_msg + i) != '\0') {
+        str[i] = *(req_msg + i);
+        i++;
+    }
+    str[i] = '\0';
+
+    if(strstr(str, "AL") != NULL){
+        get_all_data(diag_data.CB);
+        send_all_data();
+    }else if(strstr(str, "IA") != NULL){
+        get_U_I(diag_data.CB);
+        ftoa(diag_data.I_A, str_float, 1, sizeof(str_float));
+        strcpy(outp_str, "IA");
+        strcat(outp_str, str_float);
+        strcat(outp_str, "\n");
+        uart_puts(outp_str);
+        //GPIO_toggle(&PORTD, ANT05);
+    }else if(strstr(str, "IB") != NULL){
+        //get_U_I(diag_data.CB);
+        ftoa(diag_data.I_B, str_float, 1, sizeof(str_float));
+        strcpy(outp_str, "IB");
+        strcat(outp_str, str_float);
+        strcat(outp_str, "\n");
+        uart_puts(outp_str);
+}else if(strstr(str, "FU") != NULL){
+        //get_U_I(diag_data.CB);
+        ftoa(diag_data.U, str_float, 1, sizeof(str_float));
+        strcpy(outp_str, "FU");
+        strcat(outp_str, str_float);
+        strcat(outp_str, "\n");
+        uart_puts(outp_str);
+}else if(strstr(str, "EC") != NULL){
+        get_compass();
+        ftoa(diag_data.azimuth, str_float, 1, sizeof(str_float));
+        strcpy(outp_str, "EC");
+        strcat(outp_str, str_float);
+        strcat(outp_str, "\n");
+        uart_puts(outp_str);
+}else if(strstr(str, "TA") != NULL){
+        get_temp(diag_data.CB, TEMP_A);
+        ftoa(diag_data.temp_A, str_float, 1, sizeof(str_float));
+        strcpy(outp_str, "TA");
+        strcat(outp_str, str_float);
+        strcat(outp_str, "\n");
+        uart_puts(outp_str);
+}else if(strstr(str, "TB") != NULL){
+        get_temp(diag_data.CB, TEMP_B);
+        ftoa(diag_data.temp_B, str_float, 1, sizeof(str_float));
+        strcpy(outp_str, "TB");
+        strcat(outp_str, str_float);
+        strcat(outp_str, "\n");
+        uart_puts(outp_str);
+}else if(strstr(str, "AN") != NULL){
+        //get_U_I(diag_data.CB);
+        itoa(diag_data.ANT, str_float, 10);
+        strcpy(outp_str, "AN");
+        strcat(outp_str, str_float);
+        strcat(outp_str, "\n");
+        uart_puts(outp_str);
+}else if(strstr(str, "CB") != NULL){
+        //get_U_I(diag_data.CB);
+        itoa(diag_data.CB, str_float, 10);
+        strcpy(outp_str, "CB");
+        strcat(outp_str, str_float);
+        strcat(outp_str, "\n");
+        uart_puts(outp_str);
+}else if(strchr(str, '!') != NULL){
+        uart_puts("YE");
+}else{
+    GPIO_toggle(&PORTD, ANT01);
+    /*uart_puts("\r\n→");
+    uart_puts(str);
+    uart_puts("←\r\n") ;*/
+}
+}
 
 int main (void){
     char str [12];
+    //uint8_t old_state = 0;
     //TCCR3A = 0;
     //TCCR4A = 0;
     ANT_init();
@@ -198,18 +341,18 @@ int main (void){
     //uart_puts("4\r\n");
     GPIO_write_low(&PORTC, LED);
   
-    //TIM3_ovf_50ms();
-    //TIM3_ovf_enable();
+    TIM3_ovf_50ms();
+    TIM3_ovf_enable();
     while((uart_getc() & 0x00ff) != '!');
-    //TIM3_ovf_disable();
-    //TIM3_stop();
+    TIM3_ovf_disable();
+    TIM3_stop();
     
     //RX_STOP();
     uart_puts("YE");
-    get_all_data(diag_data.CB);
+    //get_all_data(diag_data.CB);
     //uart_puts("YE");
     //diag_data.U = ADC_U();
-    send_all_data();
+    //send_all_data();
     //_delay_ms(50);
     //RX_START();
     /*while(strchr(rx_msg, '!') == NULL){
@@ -229,7 +372,7 @@ int main (void){
     send_all_data();
     _delay_ms(20);
     RX_START;*/
-
+    get_all_data(diag_data.CB);
 
     /*
     if(strstr(rx_msg, "AL") == NULL){
@@ -239,13 +382,55 @@ int main (void){
         send_all_data();
         
     }*/
-
-    TIM1_ovf_4sec();
+    /*while(uart_available() < 2);
+    uart_rx_str(rx_msg);
+    if(strstr(rx_msg, "AL") != NULL){
+        get_all_data(diag_data.CB);
+        send_all_data();
+    }*/
+    TIM1_ovf_1sec();
     TIM1_ovf_enable();
-    //uint8_t x = 0;
     
+    uint8_t a_old = 0;
     while(1){
-        if(new_data){
+        uint8_t a = uart_available();
+        if(a > 2){
+            //sprintf(str, "%d", a);
+            //uart_puts(str);
+            //uart_puts("\r\n");
+            /*uart_puts("\r\n");
+            sprintf(str, "%d", a);
+            uart_puts(str);*/
+            //uart_puts("\r\n");
+
+            uart_rx_str(rx_msg);
+            //uart_puts(rx_msg);
+            //uart_puts("←");
+            serve_request(rx_msg, sizeof(rx_msg));
+            
+            
+            /*sprintf(str, "%d", uart_available());
+            uart_puts(str);*/
+            //uart_puts("\r\n");
+
+        }/*else{
+            //GPIO_write_low(&PORTD, ANT03);
+            if(a != a_old){
+                /*itoa(UART_LastRxError, str, 2);
+                uart_puts(str);
+                uart_puts("\r\n");*/
+                //sprintf(str, "%d", a);
+                //uart_puts("AVAILABLE: ");
+                //uart_puts(str);
+                //uart_puts("\r\n");
+                //a_old = a;
+            //}
+            }
+            /*else if((a <= 2) && (a > 0)){
+            sprintf(str, "%d", a);
+            uart_puts(str);
+            uart_puts("\r\n");
+        }*/
             /*uart_rx_str(rx_msg);
                 RX_STOP();
                 //strcat(rx_msg, "↑(Tx)");
@@ -315,16 +500,15 @@ int main (void){
         //t = (uint16_t)UART_RxTail;
         //itoa(t, str, 10);
         //uart_puts(str);
-        if(uart_available() > 2){
+        /*if(uart_available() > 2){
             uart_rx_str(rx_msg);  
             if(strstr(rx_msg, "AL") != NULL){
                 get_all_data(diag_data.CB);
                 send_all_data();
                 GPIO_toggle(&PORTD, ANT05);
             }
-        }
-        new_data = 0;
-        }
+        }*/
+        
         /*if(new_data == 1){
             //GPIO_toggle(&PORTC, LED);
             diag_data.U = ADC_U();
@@ -350,20 +534,28 @@ int main (void){
 
             new_data = 0;
         }*/
-    }
+    
 }
 
-
+//}
 
 ISR(TIMER1_OVF_vect){
-    GPIO_toggle(&PORTC, LED);
+    static uint8_t sec_cnt;
+    //GPIO_toggle(&PORTC, LED);
+    
+    if(sec_cnt < 60){
+        sec_cnt++;
+    }else{
+        sec_cnt = 0;
+        new_data++;
+    }
     //diag_data.U = ADC_U();
     //diag_data.I_A = ADC_I(I_DIAG1);
     //ADC_read_U();
     //diag_data.U = ADC_get_U();
     //ADC_read_I(I_DIAG1);
     //diag_data.I_A = ADC_get_I(I_DIAG1);
-    new_data = 1;
+    
 }
 
 ISR(TIMER3_OVF_vect){

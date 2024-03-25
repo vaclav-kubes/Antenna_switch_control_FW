@@ -81,7 +81,7 @@
  *  CDEFS += -DUART_RX_BUFFER_SIZE=nn to your Makefile.
  */
 #ifndef UART_RX_BUFFER_SIZE
-# define UART_RX_BUFFER_SIZE 32
+# define UART_RX_BUFFER_SIZE 8
 #endif
 
 /** @brief  Size of the circular transmit buffer, must be power of 2
@@ -90,7 +90,7 @@
  *  CDEFS += -DUART_TX_BUFFER_SIZE=nn to your Makefile.
  */
 #ifndef UART_TX_BUFFER_SIZE
-# define UART_TX_BUFFER_SIZE 128
+# define UART_TX_BUFFER_SIZE 64
 #endif
 
 /* test if the size of the circular buffers fits into SRAM */
@@ -113,6 +113,7 @@
 //volatile unsigned char UART_RxTail;
 //volatile unsigned char UART_RxHead;
 //volatile uint8_t new_chars;
+//volatile unsigned char UART_LastRxError;
 /*
 ** function prototypes
 */
@@ -129,7 +130,7 @@ extern void uart_init(unsigned int baudrate);
  *  @param   none
  *  @return  bytes waiting in the receive buffer
  */
-extern int uart_available(void);
+extern uint8_t uart_available(void);
 
 /**
  *  @brief   Get received byte from ringbuffer

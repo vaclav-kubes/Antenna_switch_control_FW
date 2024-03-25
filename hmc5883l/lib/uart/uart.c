@@ -41,7 +41,7 @@
 #include <avr/pgmspace.h>
 #include "uart.h"
 #include "antenna_switch_IO.h"
-
+#include <gpio.h>
 /*
  *  constants and macros
  */
@@ -344,7 +344,7 @@ static volatile unsigned char UART_TxHead;
 static volatile unsigned char UART_TxTail;
 static volatile unsigned char UART_RxHead;
 static volatile unsigned char UART_RxTail;
-static volatile unsigned char UART_LastRxError;
+static volatile unsigned char UART_LastRxError; //static
 
 #if defined( ATMEGA_USART1 )
 static volatile unsigned char UART1_TxBuf[UART_TX_BUFFER_SIZE];
@@ -377,7 +377,8 @@ ISR(UART0_RECEIVE_INTERRUPT)
     unsigned char usr;
     unsigned char lastRxError = 0;
 
-
+    GPIO_toggle(&PORTC, LED);
+    
     /* read UART status register and UART data register */
     usr  = UART0_STATUS;
     data = UART0_DATA;
@@ -400,6 +401,7 @@ ISR(UART0_RECEIVE_INTERRUPT)
     {
         /* error: receive buffer overflow */
         lastRxError = UART_BUFFER_OVERFLOW >> 8;
+        //GPIO_toggle(&PORTD, ANT05);
     }
     else
     {
@@ -411,6 +413,18 @@ ISR(UART0_RECEIVE_INTERRUPT)
         //GPIO_toggle(&PORTD, ANT03);
     }
     UART_LastRxError |= lastRxError;
+
+    /*if(lastRxError == (UART_BUFFER_OVERFLOW >> 8)){
+            GPIO_write_low(&PORTD, ANT05);
+        }else if(lastRxError == (UART_FRAME_ERROR >> 8)){
+           GPIO_write_low(&PORTD, ANT04); 
+        }else if(lastRxError == (UART_PARITY_ERROR >>8)){
+           GPIO_write_low(&PORTD, ANT03); 
+        }else if(lastRxError == (UART_OVERRUN_ERROR>>8)){
+           GPIO_write_low(&PORTD, ANT02); 
+        }else{
+            GPIO_toggle(&PORTD, ANT05);
+        }*/
 }
 
 
@@ -501,9 +515,14 @@ Purpose:  Determine the number of bytes waiting in the receive buffer
 Input:    None
 Returns:  Integer number of bytes in the receive buffer
 **************************************************************************/
-int uart_available(void)
+uint8_t uart_available(void)
 {
-        return (UART_RX_BUFFER_MASK + UART_RxHead - UART_RxTail) % UART_RX_BUFFER_MASK;
+    int8_t len = UART_RxHead - UART_RxTail;
+    if(len < 0){
+        len += UART_RX_BUFFER_MASK + 1;
+    }
+    return len;
+        //return (UART_RX_BUFFER_MASK + UART_RxHead - UART_RxTail) % UART_RX_BUFFER_MASK;
 }/* uart_available */
 
 
@@ -559,7 +578,7 @@ void uart_putc(unsigned char data)
 
     UART_TxBuf[tmphead] = data;
     UART_TxHead         = tmphead;
-    RX_DISABLE();
+    //RX_DISABLE();
     /* enable UDRE interrupt */
     UART0_CONTROL |= _BV(UART0_UDRIE);
 }/* uart_putc */
@@ -572,7 +591,7 @@ void uart_putc(unsigned char data)
  **************************************************************************/
 void uart_puts(const char *s)
 {
-    //RX_DISABLE();
+    RX_DISABLE();
     while (*s)
         uart_putc(*s++);
     //RX_START;
