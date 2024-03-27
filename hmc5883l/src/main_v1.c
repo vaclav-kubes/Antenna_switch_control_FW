@@ -42,7 +42,7 @@ volatile struct d_data {
     float I_A;
     float I_B;
     uint8_t CB;
-    uint8_t ANT;
+    uint16_t ANT;
 }diag_data;
 
 struct data raw_compass;
@@ -50,10 +50,11 @@ struct data raw_compass;
 char rx_msg[UART_RX_BUFFER_SIZE];
 char tx_msg[70];
 volatile uint8_t new_data = 0;
+uint8_t ant_switch_vect_old = 0;
 
 void ANT_init(){
     GPIO_mode_output(&DDRD, ANT01);
-    GPIO_write_low(&PORTD,  ANT01);
+    GPIO_write_high(&PORTD,  ANT01);
     //GPIO_write_high(&PORTD,  ANT01);
     GPIO_mode_output(&DDRD, ANT02);
     GPIO_write_high(&PORTD, ANT02);
@@ -204,9 +205,26 @@ void uart_rx_str(char *var_to_save){
     
 }
 
+void switch_ant(uint8_t toggle_mask){
+    uint8_t A_ant_pin [] = {ANT05, ANT04, ANT03, ANT02, ANT01};
+    uint8_t B_ant_pin [] = {ANT15, ANT14, ANT13, ANT12, ANT11};
+    uint8_t *B_ant_port [] = {&PORTB, &PORTB, &PORTD, &PORTC, &PORTC};
+    if(toggle_mask & (1 << 5)){
+        ALL_ANT_OFF();
+    }else{
+        for(int8_t i = 4; i >= 0; i--){
+            if(toggle_mask & (1 << i)){
+                GPIO_toggle(&PORTD, A_ant_pin[i]);
+                //GPIO_toggle(B_ant_port[i], B_ant_pin[i]);
+            }
+    }
+    }
+}
+
+
 void serve_request( char *req_msg, uint8_t req_msg_len){//, uint8_t req_msg_len
     uint8_t i = 0;
-    char str [req_msg_len];
+    char str [req_msg_len + 1];
     char outp_str [10];
     char str_float [7];
 
@@ -264,7 +282,56 @@ void serve_request( char *req_msg, uint8_t req_msg_len){//, uint8_t req_msg_len
         uart_puts(outp_str);
 }else if(strstr(str, "AN") != NULL){
         //get_U_I(diag_data.CB);
-        itoa(diag_data.ANT, str_float, 10);
+        uint8_t len = strlen(str);
+        //itoa(len, str_float, 10);
+        //uart_puts(str);
+        //uart_puts("\n");
+        if(len > 2){
+            uint8_t ant_switch_vect_new = 0;
+            uint8_t off_all_flag = 0;
+            diag_data.ANT = 0;
+            for(uint8_t i = 2; i < len; i++){
+                if(off_all_flag){
+                    ant_switch_vect_new = (1 << 5);
+                    break;
+                }
+                //uart_putc(str[i]);
+                switch (str[i])
+                {
+                case '0':
+                    off_all_flag = 1;
+                    //diag_data.ANT = 0;
+                    break;
+                case '1':
+                    ant_switch_vect_new |= (1 << 4);
+                    diag_data.ANT = diag_data.ANT * 10 + 1;
+                    break;
+                case '2':
+                    ant_switch_vect_new |= (1 << 3);
+                    diag_data.ANT = diag_data.ANT * 10 + 2;
+                    break;
+                case '3':
+                    ant_switch_vect_new |= (1 << 2);
+                    diag_data.ANT = diag_data.ANT * 10 + 3;
+                    break;
+                case '4':
+                    ant_switch_vect_new |= (1 << 1);
+                    diag_data.ANT = diag_data.ANT * 10 + 4;
+                    break;
+                case '5':
+                    ant_switch_vect_new |= 1;
+                    diag_data.ANT = diag_data.ANT * 10 + 5;
+                    break;
+                default:
+                    uart_puts("ER\n");
+                    break;
+                }
+            }
+            switch_ant(ant_switch_vect_new ^ ant_switch_vect_old);
+            ant_switch_vect_old = ant_switch_vect_new;
+        }
+        sprintf(str_float, "%u", diag_data.ANT);   //diag_data.ANT, str_float, 10
+        //uart_puts("→\t");
         strcpy(outp_str, "AN");
         strcat(outp_str, str_float);
         strcat(outp_str, "\n");
@@ -276,15 +343,17 @@ void serve_request( char *req_msg, uint8_t req_msg_len){//, uint8_t req_msg_len
         strcat(outp_str, str_float);
         strcat(outp_str, "\n");
         uart_puts(outp_str);
-}else if(strchr(str, '!') != NULL){
+}else if(strstr(str, "!!") != NULL){
         uart_puts("YE");
 }else{
-    GPIO_toggle(&PORTD, ANT01);
-    /*uart_puts("\r\n→");
+    //GPIO_toggle(&PORTD, ANT01);
+    uart_puts("\r\n→");
     uart_puts(str);
-    uart_puts("←\r\n") ;*/
+    uart_puts("←\r\n") ;
+    //uart_puts(str);
 }
 }
+
 
 int main (void){
     char str [12];
@@ -343,7 +412,14 @@ int main (void){
   
     TIM3_ovf_50ms();
     TIM3_ovf_enable();
-    while((uart_getc() & 0x00ff) != '!');
+    //while((uart_getc() & 0x00ff) != '!');
+    while(1){
+        while(uart_available() < 3);
+        uart_rx_str(rx_msg);
+        if(strstr(rx_msg, "!!") != NULL){
+            break;
+        }
+    }
     TIM3_ovf_disable();
     TIM3_stop();
     
@@ -392,9 +468,45 @@ int main (void){
     TIM1_ovf_enable();
     
     uint8_t a_old = 0;
+    char uart_get_msg [6];
+    uint8_t n = 0;
+    char c = '\0';
     while(1){
-        uint8_t a = uart_available();
-        if(a > 2){
+        if(uart_available()){
+            c = uart_getc() & 0x00FF;
+            //RX_DISABLE();
+            //uart_putc(c);
+            //GPIO_toggle(&PORTD, ANT05);
+            if(c != '\n'){ //po testovani nutno zmenit na \n
+                uart_get_msg[n] = c;
+                if(n < 6){
+                    n++;
+                }else{
+                    n = 0;
+                }
+                
+                
+            }else{
+                /*if(n == 0){
+                    uart_get_msg[n] = '\0';
+                }else{
+                    uart_get_msg[n] = '\0';
+                }*/
+                uart_get_msg[n] = '\0';
+                //uart_get_msg[n+2] = 'X';
+                n = 0;
+                //uart_puts(uart_get_msg);
+                /*uart_puts("\r\nrx: ");
+                uart_puts(uart_get_msg);
+                uart_puts("\r\n");*/
+                serve_request(uart_get_msg, strlen(uart_get_msg));
+            }
+            //n++;
+            
+        }
+
+        //uint8_t a = uart_available();
+        //if(a > 2){
             //sprintf(str, "%d", a);
             //uart_puts(str);
             //uart_puts("\r\n");
@@ -403,19 +515,19 @@ int main (void){
             uart_puts(str);*/
             //uart_puts("\r\n");
 
-            uart_rx_str(rx_msg);
+            //uart_rx_str(rx_msg);
             //uart_puts(rx_msg);
             //uart_puts("←");
-            serve_request(rx_msg, sizeof(rx_msg));
+            //serve_request(rx_msg, sizeof(rx_msg));
             
             
             /*sprintf(str, "%d", uart_available());
             uart_puts(str);*/
             //uart_puts("\r\n");
 
-        }/*else{
+        //}/*else{
             //GPIO_write_low(&PORTD, ANT03);
-            if(a != a_old){
+            //if(a != a_old){
                 /*itoa(UART_LastRxError, str, 2);
                 uart_puts(str);
                 uart_puts("\r\n");*/
@@ -425,7 +537,7 @@ int main (void){
                 //uart_puts("\r\n");
                 //a_old = a;
             //}
-            }
+            //}
             /*else if((a <= 2) && (a > 0)){
             sprintf(str, "%d", a);
             uart_puts(str);
@@ -537,7 +649,7 @@ int main (void){
     
 }
 
-//}
+}
 
 ISR(TIMER1_OVF_vect){
     static uint8_t sec_cnt;

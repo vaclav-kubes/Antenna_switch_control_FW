@@ -5,8 +5,6 @@
 
 //#define RX_STOP UCSR0B &=  ~((1 << RXEN0) | (1<<RXCIE0));
 //#define RX_START  while((UCSR0A & (1<<TXC0)) != (1<<TXC0)); UCSR0B |= (1 << RXEN0) |(1<<RXCIE0);
-#define RX_DISABLE() UCSR0B &=  ~((1 << RXEN0) | (1<<RXCIE0));
-
 
 #define LED PC0
 #define BUTTON PB2
@@ -27,6 +25,10 @@
 #define I_DIAG2 PC3
 
 #define U_DIAG PE3
+
+#define RX_DISABLE() UCSR0B &=  ~((1 << RXEN0) | (1<<RXCIE0));
+#define ALL_ANT_TOGGLE() PORTD ^= ((1<< ANT01) | (1<< ANT02) | (1<< ANT03) | (1<< ANT04)| (1<< ANT05) | (1<< ANT13)); PORTB ^= ((1<<ANT14) | (1<<ANT15)); PORTC ^= ((1<<ANT11) | (1<<ANT12));
+#define ALL_ANT_OFF() PORTD |= ((1<< ANT01) | (1<< ANT02) | (1<< ANT03) | (1<< ANT04)| (1<< ANT05) | (1<< ANT13)); PORTB |= ((1<<ANT14) | (1<<ANT15)); PORTC |= ((1<<ANT11) | (1<<ANT12));
 
 
 #endif
