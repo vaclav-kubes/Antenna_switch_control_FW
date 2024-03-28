@@ -9,6 +9,9 @@
         "mcp9808.h": "c",
         "ftoa_my.h": "c",
         "io.h": "c",
-        "timer.h": "c"
+        "timer.h": "c",
+        "string.h": "c",
+        "twi.h": "c",
+        "uart.h": "c"
     }
 }

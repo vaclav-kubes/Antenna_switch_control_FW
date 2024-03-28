@@ -344,7 +344,7 @@ static volatile unsigned char UART_TxHead;
 static volatile unsigned char UART_TxTail;
 static volatile unsigned char UART_RxHead;
 static volatile unsigned char UART_RxTail;
-static volatile unsigned char UART_LastRxError; //static
+static volatile unsigned char UART_LastRxError; 
 
 #if defined( ATMEGA_USART1 )
 static volatile unsigned char UART1_TxBuf[UART_TX_BUFFER_SIZE];
@@ -356,13 +356,13 @@ static volatile unsigned char UART1_RxTail;
 static volatile unsigned char UART1_LastRxError;
 #endif
 
-/*ISR(USART0_TX_vect){
-    UCSR0B |= (1 << RXEN0) |(1<<RXCIE0);
-    GPIO_toggle(&PORTD, PD5);
-}*/
+/*************************************************************************
+ * Function: UART Transmission Complete interrupt
+ * Purpose:  called when the UART has transmited all data and any are waiting
+ **************************************************************************/
 ISR(USART0_TX_vect){
+    /*Enable RX pin and interrupt*/
     UCSR0B |= (1 << RXEN0) |(1<<RXCIE0);
-    //UCSR0A |= (1 << TXC0);
 }
 
 ISR(UART0_RECEIVE_INTERRUPT)
@@ -377,8 +377,6 @@ ISR(UART0_RECEIVE_INTERRUPT)
     unsigned char usr;
     unsigned char lastRxError = 0;
 
-    GPIO_toggle(&PORTC, LED);
-    
     /* read UART status register and UART data register */
     usr  = UART0_STATUS;
     data = UART0_DATA;
@@ -401,7 +399,6 @@ ISR(UART0_RECEIVE_INTERRUPT)
     {
         /* error: receive buffer overflow */
         lastRxError = UART_BUFFER_OVERFLOW >> 8;
-        //GPIO_toggle(&PORTD, ANT05);
     }
     else
     {
@@ -409,22 +406,8 @@ ISR(UART0_RECEIVE_INTERRUPT)
         UART_RxHead = tmphead;
         /* store received data in buffer */
         UART_RxBuf[tmphead] = data;
-        //new_chars++;
-        //GPIO_toggle(&PORTD, ANT03);
     }
     UART_LastRxError |= lastRxError;
-
-    /*if(lastRxError == (UART_BUFFER_OVERFLOW >> 8)){
-            GPIO_write_low(&PORTD, ANT05);
-        }else if(lastRxError == (UART_FRAME_ERROR >> 8)){
-           GPIO_write_low(&PORTD, ANT04); 
-        }else if(lastRxError == (UART_PARITY_ERROR >>8)){
-           GPIO_write_low(&PORTD, ANT03); 
-        }else if(lastRxError == (UART_OVERRUN_ERROR>>8)){
-           GPIO_write_low(&PORTD, ANT02); 
-        }else{
-            GPIO_toggle(&PORTD, ANT05);
-        }*/
 }
 
 
@@ -522,7 +505,6 @@ uint8_t uart_available(void)
         len += UART_RX_BUFFER_MASK + 1;
     }
     return len;
-        //return (UART_RX_BUFFER_MASK + UART_RxHead - UART_RxTail) % UART_RX_BUFFER_MASK;
 }/* uart_available */
 
 

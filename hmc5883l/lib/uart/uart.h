@@ -108,12 +108,7 @@
 #define UART_BUFFER_OVERFLOW 0x0200 /**< @brief receive ringbuffer overflow */
 #define UART_NO_DATA         0x0100 /**< @brief no receive data available   */
 
-//static volatile uint8_t tx_end = 0;
-//static volatile unsigned char UART_RxBuf[UART_RX_BUFFER_SIZE];
-//volatile unsigned char UART_RxTail;
-//volatile unsigned char UART_RxHead;
-//volatile uint8_t new_chars;
-//volatile unsigned char UART_LastRxError;
+
 /*
 ** function prototypes
 */
@@ -128,7 +123,7 @@ extern void uart_init(unsigned int baudrate);
 /**
  *  @brief   Return number of bytes waiting in the receive buffer
  *  @param   none
- *  @return  bytes waiting in the receive buffer
+ *  @return  Number of bytes waiting in the receive buffer
  */
 extern uint8_t uart_available(void);
 

@@ -1,37 +1,61 @@
+/***********************************************************************
+ * 
+ * ADC library for ATMEGA328PB in antenna switch controller.
+ * 
+ * ATmega328PB, 16 MHz
+ *
+ * Václav Kubeš
+ *
+ **********************************************************************/
+
+
+/* Includes ----------------------------------------------------------*/
 
 #include <adc.h>
-#include "antenna_switch_IO.h"
-#include <util/delay.h>
 
-#define VREF 5
-#define VGAP 1.1
-#define AMP 50
-#define R_SENS 0.5
-#define R_RATIO 12
 
-//#define TIM2_10ms_start() TCNT2 = 99; TCCR2B = (1<<CS22) | (1<<CS21) | (1<<CS20); TCCR2A = 0x00; TIMSK2 |= 1<<TOIE2; 
-//#define TIM2_stop TIMSK2() &= ~(1<<TOIE2);
+/* Defines ----------------------------------------------------------*/
 
-volatile uint16_t adc_val = 0;
-//volatile static uint8_t n = 0;
-volatile  uint8_t adc_end_flg = 0;
+#define VREF 5  //5 V refernce voltage of ATmega328PBs ADC (the VCC voltage)
+#define VGAP 1.1    //1.1 V internal reference voltage of ADC of ATmega328PB
+#define AMP 50  //amplification of INA180A2 diff. op. amplifier IO
+#define R_SENS 0.5  //Resistance of sensing resistor
+#define R_RATIO 12  //Ratio of resistive divider
 
+/* Library Global variables ---------------------------------------------------------*/
+
+uint16_t adc_val;
+
+/* Functions ---------------------------------------------------------*/
+
+/**********************************************************************
+ * Function: ADC_init()
+ * Purpose:  Initialize ADC unit, enable ADC, set prescaler to 128, 
+ *           ADC ref. voltage 5 V and start first conversion.
+ * Returns:  none
+ **********************************************************************/
 void ADC_init(){
-    PRR0 &= ~(1<<PRADC);
-    ADMUX = 0x00;
+    PRR0 &= ~(1<<PRADC);    //turn off powersawing 
+    ADMUX = 0x00;   //reset ADC controll registers
 	ADCSRA = 0x00;
 	ADCSRB = 0x00;
-    ADCSRA = ADCSRA | 1<<ADEN;//ADC ENABLE
+    ADCSRA = ADCSRA | 1<<ADEN;  //ADC ENABLE
     ADCSRA = ADCSRA | (1<<ADPS2 | 1<<ADPS1 | 1<<ADPS0); //adc prescaler 128
-    //ADCSRA = ADCSRA | 1<<ADIE;//adc interrupt enble
-    DIDR0 = DIDR0 | (1<< I_DIAG1 | 1<< I_DIAG2 | 1<< U_DIAG); //disable digital input on pins used for adc
-    ADMUX = ADMUX | 1<<REFS0 | 0<<ADLAR  | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0);//adc internal reference 5V | (1<<REFS1 | 1<<REFS0); 
-    ADCSRA = ADCSRA | 1<< ADSC;
-
+    DIDR0 = DIDR0 | (1<< I_DIAG1 | 1<< I_DIAG2 | 1<< U_DIAG);   //disable digital input on pins used for adc
+    ADMUX = ADMUX | 1<<REFS0 | 0<<ADLAR  | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0); //adc internal reference 5V
+    ADCSRA = ADCSRA | 1<< ADSC; //start first conversion to start the analog circuits in ADC
   }  
 
+
+/**********************************************************************
+ * Function: ADC_read_I()
+ * Purpose:  Set ADC peripheral for measuring current converted to  
+ *           voltage (ADC ref. voltage 5 V) and start conversion.
+ * Input: Pin on which conversion will be done
+ * Returns:  none
+ **********************************************************************/
 void ADC_read_I(uint8_t i_diag_pin){
-    if(ADMUX != 0b01000110 || ADMUX != 0b01000011){
+    if(ADMUX != 0b01000110 || ADMUX != 0b01000011){ //if the pin (input) of ADC doesnt match the selected pin then set it
         if (i_diag_pin == I_DIAG1){
             ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 0<<MUX0); //I_diag1 PE2
         }else{
@@ -42,8 +66,14 @@ void ADC_read_I(uint8_t i_diag_pin){
     ADCSRA = ADCSRA | 1<<ADSC;//adc start conversion
 }
 
+
+/**********************************************************************
+ * Function: ADC_read_U()
+ * Purpose:  Set ADC peripheral for measuring voltage 
+ *              (ADC ref. voltage 1.1 V) and start conversion.
+ * Returns:  none
+ **********************************************************************/
 void ADC_read_U(){
-    //ADMUX &= 0b11110000;
     if(ADMUX != 0b11000111){
         ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0); //U_diag PE3
         ADMUX = (ADMUX & 0b00111111) | (1<<REFS1 | 1<<REFS0);//adc internal reference 1.1V
@@ -51,144 +81,64 @@ void ADC_read_U(){
     ADCSRA = ADCSRA | 1<<ADSC;//adc start conversion
 }
 
-float ADC_get_I(uint8_t i_diag_pin){
-    /*if (i_diag_pin == I_DIAG1){
-        ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 0<<MUX0); //I_diag1 PE2
-    }else{
-        ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 0<<MUX2 | 1<<MUX1 | 1<<MUX0); //I_diag2 PC3
-    }
-    ADMUX = ADMUX | (1<<REFS0);//adc internal reference 5V
-    ADCSRA = ADCSRA | 1<<ADSC;//adc start conversion*/
-    
-    
-    while(!adc_end_flg);
-    //float adc_val_avg = adc_val_acc / 10;
-    float u = VREF * (adc_val / 1024.0);
-    //adc_val = 0;
-    u = u / AMP;
-    return  (u / R_SENS)*1000;//(u / R_SENS);
-}
 
-float ADC_get_U(){
-    /*ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0); //U_diag PE3
-    ADMUX = ADMUX | (1<<REFS1 | 1<<REFS0);//adc internal reference 1.1V
-    ADCSRA = ADCSRA | 1<<ADSC;//adc start conversion*/
-
-    while(!adc_end_flg);
-    //float adc_val_avg = adc_val_acc / 10;
-    
-    float u = VGAP * (adc_val / 1024.0);
-    //adc_val = 0;
-    return  (u * R_RATIO);
-}
-
+/**********************************************************************
+ * Function: ADC_U()
+ * Purpose:  Set ADC peripheral for measuring voltage 
+ *          (ADC ref. voltage 1.1 V) and start conversion. Return 
+ *          corresponding voltage (at the res. divider) in V.
+ * Returns:  (float) measured voltage [V]
+ **********************************************************************/
 float ADC_U(){
-    if(ADMUX != 0b11000111){
+    if(ADMUX != 0b11000111){    //if the current setting of adc input doesnt match the pin where measured voltage is connected 
         ADMUX = (ADMUX & 0b00111111) | (1<<REFS1 | 1<<REFS0);//adc internal reference 1.1V
-        ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0); //U_diag PE3
-        _delay_ms(10);
+        ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0); //set adc input to pin (U_diag) PE3
+        _delay_ms(10);  //necessary for adc to settle (find out empirically)
     }
-    //ADCSRA = ADCSRA | 1<< ADSC;
-    
-    //char str [9];
+    /*take to conversions, firs is throvn out (to rid of inccorect value from firs conversion after switching the ref. voltage)*/
     for(uint8_t i = 0; i < 2; i++){
-        //itoa(ADCSRA, str, 2);
-        //uart_puts(str);
-        //ADCSRA = ADCSRA | 1<< ADIE;
-        //ADCSRA = ADCSRA & ~(1<< ADIF);
-        ADCSRA = ADCSRA | 1<< ADSC;//adc start conversion
-        //while(!(ADCSRA & (1<<ADIF)));//ADCSRA = ADCSRA | 1<< ADIE;;
-        while((ADCSRA & (1<<ADSC))); 
-        //adc_val = ADC;
-        //uart_putc('a');
+
+        ADCSRA = ADCSRA | 1<< ADSC; //adc start conversion
+
+        while((ADCSRA & (1<<ADSC))); //wait untill the conversion has ended
     }
-    adc_val = ADC;
-    /*ADCSRA = ADCSRA | 1<< ADSC;//adc start conversion
-    while(!(ADCSRA & (1<<ADIF)));
-    //adc_val = ADC;*/
-    float u = VGAP * (adc_val / 1024.0);
-    //adc_val = 0;
+    adc_val = ADC;  //read the ADC conversion result
+    float u = VGAP * (adc_val / 1024.0);    //calculation of real voltage at the voltage divider
     return  (u * R_RATIO);
 }
 
+
+/**********************************************************************
+ * Function: ADC_I()
+ * Purpose:  Set ADC peripheral for measuring current converted to 
+ *          voltage (ADC ref. voltage 5 V) and start conversion. Return 
+ *          corresponding current in mA.
+ * Input: Pin where the adc conv. will be done
+ * Returns:  (float) measured current [mA]
+ **********************************************************************/
 float ADC_I(uint8_t i_diag_pin){
-    //uart_puts("2.2");
+    /*according to selected I diag. pin set the input of adc*/
     if((ADMUX != 0b01000110) || (ADMUX != 0b01000011)){
         if (i_diag_pin == I_DIAG1){
             ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 0<<MUX0); //I_diag1 PE2
         }else{
             ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 0<<MUX2 | 1<<MUX1 | 1<<MUX0); //I_diag2 PC3
         }
-        ADMUX = (ADMUX & 0b00111111) | (1<<REFS0);//adc internal reference 5V
+        ADMUX = (ADMUX & 0b00111111) | (1<<REFS0);  //adc internal reference 5V
         _delay_ms(10);
     }
-    //uart_puts("2.2");
+    
+    /*take to conversions, firs is throvn out (to rid of inccorect value from firs conversion after switching the ref. voltage)*/
     for(uint8_t i = 0; i < 2; i++){
-        //ADCSRA = ADCSRA | 1<< ADIE;
-        ADCSRA = ADCSRA | 1<< ADSC ;//adc start conversion| 1<< ADIE
-        while((ADCSRA & (1<<ADSC))); 
-        //while((ADCSRA & (1<<ADSC))) ADCSRA = ADCSRA | 1<< ADIE; 
-        //while(!(ADCSRA & (1<<ADIF))) ;//ADCSRA = ADCSRA | 1<< ADIE
-        //uart_puts('a');
+        
+        ADCSRA = ADCSRA | 1<< ADSC ;    //adc start conversion| 1<< ADIE
+        
+        while((ADCSRA & (1<<ADSC)));    //necessary for adc to settle (find out empirically)
     }
-    //uart_puts("2.2");
-    adc_val = ADC;
+    adc_val = ADC;  //read the ADC conversion result
+    
+    /*calculation of current*/
     float u = VREF * (adc_val / 1024.0);
-    //adc_val = 0;
     u = u / AMP;
     return  (u / R_SENS)*1000;
 }
-
-/*float ADC_U2(){
-    if(ADMUX != 0b11000111){
-        ADMUX = (ADMUX & 0b00111111) | (1<<REFS1 | 1<<REFS0);//adc internal reference 1.1V
-        ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0); //U_diag PE3
-        TIM2_10ms_start();
-    }
-    //ADCSRA = ADCSRA | 1<< ADSC;
-    
-    
-    for(uint8_t i = 0; i < 11; i++){
-        ADCSRA = ADCSRA | 1<< ADSC;//adc start conversion
-        while(!(ADCSRA & (1<<ADIF)));
-        //adc_val = ADC;
-        //uart_putc('a');
-    }
-    adc_val = ADC;
-    /*ADCSRA = ADCSRA | 1<< ADSC;//adc start conversion
-    while(!(ADCSRA & (1<<ADIF)));
-    //adc_val = ADC;
-    float u = VGAP * (adc_val / 1024.0);
-    //adc_val = 0;
-    return  (u * R_RATIO);
-}*/
-/*ISR(ADC_vect){
-    adc_val = ADC;
-    GPIO_toggle(&PORTD, ANT05);
-    //ADCSRA = ADCSRA | 1 <<ADIF;
-    //ADCSRA = ADCSRA | 1<< ADIE;
-}*/
-/*ISR(ADC_vect){
-    //ADCSRA |= (1 << ADIF);
-    char str [9];
-    itoa(ADCSRA, str, 2);
-    uart_puts(str);
-    //ADCSRA |= (1<<ADIF);
-    //adc_val = ADC;
-    /*if(n < 2){
-        adc_end_flg = 0;
-        n++;
-        //ADCSRA = ADCSRA | 1 <<ADIF;
-        ADCSRA = ADCSRA | 1<<ADSC;
-    }else{
-        n = 0;
-        adc_val = ADC;
-        //char str[8];
-        //itoa(adc_val, str, 10);
-        //uart_puts(str);
-        adc_end_flg = 1;
-    }*/
-    /*char str[11];
-    itoa(adc_val, str, 2);
-    uart_puts(str);*/
-//}*/
