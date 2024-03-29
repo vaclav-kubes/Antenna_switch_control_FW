@@ -14,6 +14,22 @@
 
 /* Functions ---------------------------------------------------------*/
 
+/**
+ * @brief  Auxiliary function to round float numb. to given decimals 
+ * 
+ * @param   f (float)  float to be rounded
+ * @param   n_places (uint8_t)  number of decimals to be round at
+ * 
+ * @return  rounded float
+*/
+float round_f(float f, int8_t n_places){
+    uint16_t n = 1;
+    for(uint8_t i = 0; i < n_places; i++){
+        n *= 10;
+    }
+    return (round(f * n) / n);
+}
+
 /**********************************************************************
  * Function: ftoa()
  * Purpose:  Convert float type to array of characters. (max number of 
@@ -27,7 +43,7 @@
  * Returns:  none
  **********************************************************************/
 void ftoa(float f, char *outp_str, uint8_t after_point, uint8_t size_of_inp_array){
-    
+    f = round_f(f, after_point);
     char int_part[5];   //char array for integer part (max. 4 places)
     char frac_part[after_point + 1];    //char array for decimal part
     char str [7 + after_point]; //final char array to put it together
@@ -52,8 +68,9 @@ void ftoa(float f, char *outp_str, uint8_t after_point, uint8_t size_of_inp_arra
     char frc [after_point + 1]; 
     strcpy(frc, add_zeros);
     strcat(frc, frac_part);
-
+    
     /*copy integer part to final string*/
+    /*
     for(uint8_t i = 0; i < sizeof(int_part) - 1; i++){
         str[i] = int_part[i];
     }
@@ -61,9 +78,10 @@ void ftoa(float f, char *outp_str, uint8_t after_point, uint8_t size_of_inp_arra
     str[sizeof(int_part) - 1] = '.';    //add decimal point
    
     /*copy decimal part to final dtring*/
+    /*
     for(uint8_t i = 0; i < sizeof(frc); i++){
         str[sizeof(int_part) + i] = frc[i];
-    }
+    }*/
 
     /*connect integer part, dec. point and decimal part together*/
     //??not sure why I did it again - this part or that upper could by deleted (?)
@@ -74,9 +92,9 @@ void ftoa(float f, char *outp_str, uint8_t after_point, uint8_t size_of_inp_arra
     strcat(str_out, frc);
 
     /*unnecessary clearing of the char array where the result should be placed*/
-    for(uint8_t i = 0; i < size_of_inp_array; i++){
+    /*for(uint8_t i = 0; i < size_of_inp_array; i++){
         *(outp_str + i) = '\0';
-    }
+    }*/
 
     /*copy the result string where it is expected*/
     for(uint8_t i = 0; i < (sizeof(int_part) + sizeof(frc)); i++){

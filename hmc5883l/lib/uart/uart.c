@@ -420,7 +420,6 @@ ISR(UART0_TRANSMIT_INTERRUPT)
 {
     unsigned char tmptail;
 
-
     if (UART_TxHead != UART_TxTail)
     {
         /* calculate and store new buffer index */

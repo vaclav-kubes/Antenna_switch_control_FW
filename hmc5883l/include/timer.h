@@ -24,7 +24,7 @@
 /** @brief Stop timer, prescaler 000 --> STOP */
 #define TIM1_stop()      TCCR1B &= ~((1<<CS12) | (1<<CS11) | (1<<CS10));
 
-/** @brief Set overflow 500ms, prescaler 101 --> 1024, OCR1A = 7813 */
+/** @brief Set overflow 500ms, ! works only if COMPA inerrupt is on !, prescaler 101 --> 1024, OCR1A = 7813 */
 #define TIM1_500ms_ovf() OCR1A = 7813; TCCR1A = 0x00; TCCR1B &= ~(1<<CS11); TCCR1B |= ((1<<CS10) | (1<<CS12) | (1<<WGM12));
 
 /** @brief Set overflow 1s, prescaler 100 --> 256 */
@@ -34,7 +34,7 @@
 #define TIM1_ovf_4sec()  TCCR1B &= ~(1<<CS11); TCCR1B |= (1<<CS12) | (1<<CS10);
 
 /** @brief Enable timer 1 ovf. and compare match interrupts */
-#define TIM1_ovf_enable() TIMSK1 |= (1<<TOIE1) | (1<<OCIE1A);
+#define TIM1_ovf_enable() TIMSK1 |= (1<<TOIE1);// | (1<<OCIE1A);
 
 /** @brief Disable interrupts by Timer 1*/
 #define TIM1_ovf_disable() TIMSK1 &= ~((1<<TOIE1) |(1<<OCIE1A));
