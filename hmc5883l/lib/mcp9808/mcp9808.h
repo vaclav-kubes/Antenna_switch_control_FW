@@ -39,14 +39,14 @@
 
 /**
  * @brief  Initialize MCP9808 temp. sens. for continous measuring.
- * @param  (uint8_t)sens Indication of which of two MCP9808 should be initialized
- * @return none
+ * @param  sens(uint8_t) Indication of which of two MCP9808 should be initialized
+ * @return (uint8_t) 1 if temp. sens responded, 0 didnt respond
  */
 uint8_t MCP9808_init(uint8_t sens);
 
 /**
  * @brief  Read the temp. data from MCP9808 and return temp. value.
- * @param  (uint8_t)sens Indication of which of two MCP9808 should be read
+ * @param  sens(uint8_t) Indication of which of two MCP9808 should be read
  * @return (float) measured temperature
  */
 float MCP9808_read_temp(uint8_t sens);

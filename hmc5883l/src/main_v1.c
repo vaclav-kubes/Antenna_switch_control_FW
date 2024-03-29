@@ -123,6 +123,13 @@ void get_compass(){
 }
 
 /**
+ * @brief   Test if unit B is connected 
+*/
+void get_B_conn(){
+    diag_data.CB = MCP9808_init(TEMP_B);
+}
+
+/**
  * @brief   Get all diag. data and save them to diag_data struct
  * 
  * @param CB(uint8_t)   indiacation of B unit connection (1 - Yes, 0 - No)   
@@ -131,8 +138,8 @@ void get_all_data(uint8_t CB){
     get_temp(CB, TEMP_A);
     get_temp(CB, TEMP_B);
     
-    //get_compass();
-    diag_data.azimuth = 100.0;//diag_data.azimuth = HMC5883L_azimuth(raw_compass.X, raw_compass.Y);
+    get_compass();
+    //diag_data.azimuth = 100.0;//diag_data.azimuth = HMC5883L_azimuth(raw_compass.X, raw_compass.Y);
     get_U();
     get_I_A();
     get_I_B(CB);  
@@ -323,6 +330,7 @@ void serve_request(char *req_msg, uint8_t req_msg_len){
         uart_puts(outp_str);
 
 }else if(strstr(str, "CB") != NULL){
+        get_B_conn();
         itoa(diag_data.CB, str_float, 10);
         strcpy(outp_str, "CB");
         strcat(outp_str, str_float);
@@ -398,7 +406,7 @@ int main (void){
     uint8_t n = 0;
     char c = '\0';  //char variable for reading new char from UART RC buffer
     
-    /*infinet loop*/
+    /*infinite loop*/
     while(1){
         if(uart_available()){ //if UART received character
             c = uart_getc() & LWR_BYTE; //extracting the only character 
