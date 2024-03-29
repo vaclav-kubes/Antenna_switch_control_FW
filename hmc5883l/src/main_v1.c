@@ -357,6 +357,7 @@ int main (void){
     GPIO_mode_output(&DDRC, LED);
     twi_init();
     uart_init(UART_BAUD_SELECT(9600, F_CPU));   //Speed of UART is 9600 bd
+    HMC588L_init();
     ADC_init();
     MCP9808_init(TEMP_A); 
     diag_data.CB = MCP9808_init(TEMP_B);    //according to unit B temp. sensor presence on TWI presence of unit B connection is determined
