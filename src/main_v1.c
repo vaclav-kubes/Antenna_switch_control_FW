@@ -228,7 +228,7 @@ void serve_request(char *req_msg, uint8_t req_msg_len){
     char outp_str [12];
     char str_float [7];
 
-    /*Copy command to sting to make easy the command recognition*/
+    /*Copy command to string to make easy the command recognition*/
     uint8_t i = 0;
     while (*(req_msg + i) != '\0') {
         str[i] = *(req_msg + i);
@@ -417,7 +417,7 @@ int main (void){
     
     char uart_get_msg [6];
     uint8_t n = 0;
-    char c = '\0';  //char variable for reading new char from UART RC buffer
+    char c = '\0';  //char variable for reading new char from UART RX buffer
     
     /*infinite loop*/
     while(1){

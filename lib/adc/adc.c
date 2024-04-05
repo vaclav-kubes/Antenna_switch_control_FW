@@ -35,7 +35,7 @@ uint16_t adc_val;
  * Returns:  none
  **********************************************************************/
 void ADC_init(){
-    PRR0 &= ~(1<<PRADC);    //turn off powersawing 
+    PRR0 &= ~(1<<PRADC);    //turn off powersaving 
     ADMUX = 0x00;   //reset ADC controll registers
 	ADCSRA = 0x00;
 	ADCSRB = 0x00;
@@ -95,7 +95,7 @@ float ADC_U(){
         ADMUX = (ADMUX & 0b11110000) | (0<<MUX3 | 1<<MUX2 | 1<<MUX1 | 1<<MUX0); //set adc input to pin (U_diag) PE3
         _delay_ms(10);  //necessary for adc to settle (find out empirically)
     }
-    /*take to conversions, firs is throvn out (to rid of inccorect value from firs conversion after switching the ref. voltage)*/
+    /*take to conversions, first is thrown out (to rid of inccorect value from firs conversion after switching the ref. voltage)*/
     for(uint8_t i = 0; i < 2; i++){
 
         ADCSRA = ADCSRA | 1<< ADSC; //adc start conversion
@@ -128,7 +128,7 @@ float ADC_I(uint8_t i_diag_pin){
         _delay_ms(10);
     }
     
-    /*take to conversions, firs is throvn out (to rid of inccorect value from firs conversion after switching the ref. voltage)*/
+    /*take to conversions, first is thrown out (to rid of inccorect value from firs conversion after switching the ref. voltage)*/
     for(uint8_t i = 0; i < 2; i++){
         
         ADCSRA = ADCSRA | 1<< ADSC ;    //adc start conversion| 1<< ADIE
