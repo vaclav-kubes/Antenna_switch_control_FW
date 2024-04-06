@@ -14,7 +14,9 @@
 
 #include <hmc5883l.h>
 
-
+/* Variable definitions ----------------------------------------------*/
+static uint16_t g_list [8] = {1370, 1090, 820, 660, 440, 390, 330, 230};
+static uint16_t g;
 /* Function definitions ----------------------------------------------*/
 
 /**********************************************************************
@@ -54,6 +56,39 @@ struct data HMC5883L_rawData(struct data write_to){
     write_to.Z = (twi_read(TWI_ACK)<<8 | twi_read(TWI_ACK));
     write_to.Y = (twi_read(TWI_ACK)<<8 | twi_read(TWI_NACK));
     twi_stop();
+
+    uint8_t gain [8]= {GAIN_0_88, GAIN_1_3, GAIN_1_9, GAIN_2_5, GAIN_4_0, GAIN_4_7, GAIN_5_6, GAIN_8_1};
+    uint8_t i = 0;
+    while((write_to.X == -4096) || (write_to.Y == -4096) || (write_to.Z == -4096)){
+        twi_start();
+        twi_write(HMC588L_I2C_ADR<<1 | TWI_WRITE);
+        twi_write(CONFIG_REG_B);
+        twi_write(gain[i]<< 5);
+        twi_stop();
+        g = g_list[i];
+        twi_start();
+        twi_write(HMC588L_I2C_ADR<<1 | TWI_WRITE);
+        twi_write(DATA_X);
+        twi_start();
+        twi_write(HMC588L_I2C_ADR<<1 | TWI_READ);
+        write_to.X = (twi_read(TWI_ACK)<<8 | twi_read(TWI_ACK));
+        write_to.Z = (twi_read(TWI_ACK)<<8 | twi_read(TWI_ACK));
+        write_to.Y = (twi_read(TWI_ACK)<<8 | twi_read(TWI_NACK));
+        twi_stop();
+        
+        i++;
+        if(i > 7){
+            i = 0;
+            twi_start();
+            twi_write(HMC588L_I2C_ADR<<1 | TWI_WRITE);
+            twi_write(CONFIG_REG_B);
+            twi_write(GAIN_1_3<< 5);
+            twi_stop();
+            g = g_list[1];
+            break;
+        }
+        
+    }
     return write_to;
 }
 
@@ -65,7 +100,7 @@ struct data HMC5883L_rawData(struct data write_to){
  * Returns:  (float) calculated azimuth 
  **********************************************************************/
 float HMC5883L_azimuth(int16_t X, int16_t Y){
-    double heading = 180*atan2((double)(Y + 182)/1.090f, (double)(X - 10)/1.090f)/M_PI - 90;
+    double heading = 180*atan2((double)(Y + 182)/(g/100.0), (double)(X - 10)/(g/100.0))/M_PI - 90;
 
     heading += MAG_POLE_DEC;
 

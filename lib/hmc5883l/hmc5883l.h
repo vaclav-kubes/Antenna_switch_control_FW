@@ -31,7 +31,14 @@
 #define DATA_Y 7
 
 #define SAMPLES_8 0b11  //values to be set to config HMC5883L registers
+#define GAIN_0_88 0b000
 #define GAIN_1_3 0b001
+#define GAIN_1_9 0b010
+#define GAIN_2_5 0b011
+#define GAIN_4_0 0b100
+#define GAIN_4_7 0b101
+#define GAIN_5_6 0b110
+#define GAIN_8_1 0b111
 #define CONTINUOUS_READING 0b00
 #define DATARATE_15HZ 0b100
 
