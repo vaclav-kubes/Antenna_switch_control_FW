@@ -100,7 +100,12 @@ struct data HMC5883L_rawData(struct data write_to){
  * Returns:  (float) calculated azimuth 
  **********************************************************************/
 float HMC5883L_azimuth(int16_t X, int16_t Y){
-    double heading = 180*atan2((double)(Y + 182)/(g/100.0), (double)(X - 10)/(g/100.0))/M_PI - 90;
+    double heading;
+    if(X == 0){
+        heading = 0;
+    }else{
+        heading = 180*atan2((double)(Y + 182)/(g/100.0), (double)(X - 10)/(g/100.0))/M_PI - 90;
+    }
 
     heading += MAG_POLE_DEC;
 
