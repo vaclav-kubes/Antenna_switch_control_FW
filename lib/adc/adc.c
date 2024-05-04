@@ -18,7 +18,7 @@
 
 #define VREF 5  //5 V refernce voltage of ATmega328PBs ADC (the VCC voltage)
 #define VGAP 1.1    //1.1 V internal reference voltage of ADC of ATmega328PB
-#define AMP 50  //amplification of INA180A2 diff. op. amplifier IO
+#define AMP 20  //amplification of INA180A1 diff. op. amplifier IO
 #define R_SENS 0.5  //Resistance of sensing resistor
 #define R_RATIO 12  //Ratio of resistive divider
 

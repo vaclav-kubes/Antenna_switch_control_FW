@@ -27,7 +27,7 @@
 #include <adc.h> //Custom ADC library for antenna switch controller outside unit
 #include <hmc5883l.h>   //Custom Electronics compass module library
 #include <mcp9808.h>    //Custom MCP9808 temperature sensor library
-#include <ftoa_my.h>
+#include <ftoa_my.h>    //Custom fcn for float to string conversion
 #include "timer.h"  //Custom Timer library for ATmega328PB
 #include "antenna_switch_IO.h"  //Custom library for Antenna switch controller outside unit
 
