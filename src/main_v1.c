@@ -210,7 +210,7 @@ void switch_ant(uint8_t toggle_mask){
         for(int8_t i = 4; i >= 0; i--){ //if antenna state should be changed then change the state
             if(toggle_mask & (1 << i)){
                 GPIO_toggle(&PORTD, A_ant_pin[i]);
-                //GPIO_toggle(B_ant_port[i], B_ant_pin[i]);
+                GPIO_toggle(B_ant_port[i], B_ant_pin[i]);
             }
         }
     }
